@@ -56,18 +56,18 @@ def point_guided_deformation(image, source_pts : np.ndarray, target_pts : np.nda
     g = lambda ref, x: np.exp(-coeff *  np.power(np.linalg.norm(ref-x), 1))
     
     #计算G
-    pts_count = len(source_pts)
+    pts_count = len(target_pts)
     G = np.ndarray((pts_count+2, pts_count+2))
     for i in range(pts_count):
         for j in range(pts_count):
-            G[i,j] = g(source_pts[i], source_pts[j])
+            G[i,j] = g(target_pts[i], target_pts[j])
     
-    G[0:pts_count, pts_count:pts_count+2] = source_pts
-    G[pts_count:pts_count+2, 0:pts_count] = source_pts.transpose()
+    G[0:pts_count, pts_count:pts_count+2] = target_pts
+    G[pts_count:pts_count+2, 0:pts_count] = target_pts.transpose()
     G[pts_count:pts_count+2, pts_count:pts_count+2] = 0
 
     #计算F
-    F = np.vstack([target_pts, np.zeros((2, 2))])
+    F = np.vstack([source_pts, np.zeros((2, 2))])
 
     #计算A
     A = np.linalg.solve(G, F)
@@ -76,19 +76,19 @@ def point_guided_deformation(image, source_pts : np.ndarray, target_pts : np.nda
     shape = image.shape
     warped_image = np.full(shape, (255,255,255))
     warped_shape =warped_image.shape
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            src = np.array([j, i])
+    for i in range(warped_shape[0]):
+        for j in range(warped_shape[1]):
+            dst = np.array([j, i])
             w = np.zeros(pts_count + 2)
             for k in range(pts_count):
-                w[k] = g(source_pts[k], src)
-            w[pts_count:pts_count+2] = src
-            dst = np.round(w@A).astype(int)
+                w[k] = g(target_pts[k], dst)
+            w[pts_count:pts_count+2] = dst
+            src = np.round(w@A).astype(int)
             if\
-                dst[1] >= 0 and\
-                dst[0] >= 0 and\
-                dst[1] < warped_shape[0] and\
-                dst[0] < warped_shape[1]:
+                src[1] >= 0 and\
+                src[0] >= 0 and\
+                src[1] < warped_shape[0] and\
+                src[0] < warped_shape[1]:
                 warped_image[dst[1],dst[0]] \
                      = image[src[1],src[0]]
 
