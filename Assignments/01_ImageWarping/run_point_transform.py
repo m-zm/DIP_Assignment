@@ -18,7 +18,7 @@ def upload_image(img):
 # 记录点击点事件，并标记点在图像上，同时在成对的点间画箭头
 def record_points(evt: gr.SelectData):
     global points_src, points_dst, image
-    x, y = evt.index[0], evt.index[1]  # 获取点击的坐标
+    x, y = evt.index[0], evt.index[1]  # type: ignore # 获取点击的坐标
     
     # 判断奇偶次来分别记录控制点和目标点
     if len(points_src) == len(points_dst):
@@ -27,7 +27,7 @@ def record_points(evt: gr.SelectData):
         points_dst.append([x, y])  # 偶数次点击为目标点
     
     # 在图像上标记点（蓝色：控制点，红色：目标点），并画箭头
-    marked_image = image.copy()
+    marked_image = image.copy() # type: ignore
     for pt in points_src:
         cv2.circle(marked_image, tuple(pt), 1, (255, 0, 0), -1)  # 蓝色表示控制点
     for pt in points_dst:
@@ -41,15 +41,56 @@ def record_points(evt: gr.SelectData):
 
 # 执行仿射变换
 
-def point_guided_deformation(image, source_pts, target_pts, alpha=1.0, eps=1e-8):
+def point_guided_deformation(image, source_pts : np.ndarray, target_pts : np.ndarray, alpha=1.0, eps=1e-8):
     """ 
     Return
     ------
         A deformed image.
     """
+
+    #使用RBF算法进行图像变换
+    #G@A=F
+
+    #RBF径向基函数
+    coeff = 0.001
+    g = lambda ref, x: np.exp(-coeff *  np.power(np.linalg.norm(ref-x), 1))
     
-    warped_image = np.array(image)
-    ### FILL: 基于MLS or RBF 实现 image warping
+    #计算G
+    pts_count = len(source_pts)
+    G = np.ndarray((pts_count+2, pts_count+2))
+    for i in range(pts_count):
+        for j in range(pts_count):
+            G[i,j] = g(source_pts[i], source_pts[j])
+    
+    G[0:pts_count, pts_count:pts_count+2] = source_pts
+    G[pts_count:pts_count+2, 0:pts_count] = source_pts.transpose()
+    G[pts_count:pts_count+2, pts_count:pts_count+2] = 0
+
+    #计算F
+    F = np.vstack([target_pts, np.zeros((2, 2))])
+
+    #计算A
+    A = np.linalg.solve(G, F)
+
+    #构造warped image
+    shape = image.shape
+    warped_image = np.full(shape, (255,255,255))
+    warped_shape =warped_image.shape
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            src = np.array([j, i])
+            w = np.zeros(pts_count + 2)
+            for k in range(pts_count):
+                w[k] = g(source_pts[k], src)
+            w[pts_count:pts_count+2] = src
+            dst = np.round(w@A).astype(int)
+            if\
+                dst[1] >= 0 and\
+                dst[0] >= 0 and\
+                dst[1] < warped_shape[0] and\
+                dst[0] < warped_shape[1]:
+                warped_image[dst[1],dst[0]] \
+                     = image[src[1],src[0]]
 
     return warped_image
 
