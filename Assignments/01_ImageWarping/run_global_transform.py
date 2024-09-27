@@ -8,35 +8,6 @@ max_translation = 300
 def to_3x3(affine_matrix):
     return np.vstack([affine_matrix, [0, 0, 1]])
 
-
-def extract_pxiel(image, x, y):
-    if\
-        x >= image.shape[0] or\
-        y >= image.shape[1] or\
-        x < 0 or\
-        y < 0:
-        return np.array((255,255,255))
-    else:
-        return image[x][y]
-
-def interp_pixel(image, x, y):
-    pos = [x, y]
-    [left, bottom] = np.floor(pos).astype(int)
-    [right, top] = [left + 1, bottom + 1]
-    [digit_left, digit_bottom] = (pos - np.array([left, bottom])).astype(int)
-    [digit_right, digit_top] = (np.array([1,1]) - np.array([digit_left, digit_bottom])).astype(int)
-    left_top = extract_pxiel(image, left, top)
-    right_top = extract_pxiel(image, right, top)
-    left_bottom = extract_pxiel(image, left, bottom)
-    right_bottom = extract_pxiel(image, right, bottom)
-    weights = [digit_left * digit_top, digit_right * digit_top,\
-            digit_left * digit_bottom, digit_right * digit_bottom]
-    result = weights[0] * left_top +\
-                weights[1] * right_top +\
-                weights[2] * left_bottom +\
-                weights[3] * right_bottom
-    return result
-
 # Function to apply transformations based on user inputs
 def apply_transform(image, scale, rotation, translation_x, translation_y, flip_horizontal):
 
@@ -52,28 +23,15 @@ def apply_transform(image, scale, rotation, translation_x, translation_y, flip_h
     full_shape = image.shape
     shape_array = np.array([full_shape[0], full_shape[1]])
     center = shape_array / 2
-    rot_mat = np.array([[np.cos(rotation),  np.sin(rotation)],\
-                        [-np.sin(rotation), np.cos(rotation)]])
-    for i in range(full_shape[0]):
-        for j in range(full_shape[1]):
-            original_pos = np.array((i, j))
-            offset = original_pos - center
-            offset = offset - np.array([translation_x, translation_y])
-            offset = offset / scale
-            if flip_horizontal:
-                offset = np.array([offset, full_shape[1] - offset - 1])
-            offset = offset @ rot_mat
-            original_pos = offset + center
-            if\
-                original_pos[0] >= full_shape[0] or\
-                original_pos[1] >= full_shape[1] or\
-                original_pos[0] < 0 or\
-                original_pos[1] < 0:
-                transformed_image[i][j] = np.array((255,255,255))
-            else:
-                transformed_image[i][j] = interp_pixel(image, *original_pos)
-
-
+    if flip_horizontal:
+        transformed_image = cv2.flip(transformed_image, flipCode=1) # type: ignore
+    rotate_mat = cv2.getRotationMatrix2D(center.tolist(), -rotation, scale)
+    rotate_mat = to_3x3(rotate_mat)
+    translate_mat = np.array([[1, 0, translation_x],\
+                              [0, 1, translation_y]])
+    translate_mat = to_3x3(translate_mat)
+    mat = (translate_mat @ rotate_mat)[0:2]
+    transformed_image = cv2.warpAffine(transformed_image, mat, shape_array.tolist(), borderValue=(255,255,255)) # type: ignore
 
     return transformed_image
 
