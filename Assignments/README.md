@@ -1,2 +1,2 @@
 ## DIP Assignments 
-- [01] [Image Warping](Assignments/01_ImageWarping/)
+- [01] [Image Warping](01_ImageWarping/)
