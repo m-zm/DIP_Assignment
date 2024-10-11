@@ -29,7 +29,7 @@ def add_point(img_original, polygon_state, evt: gr.SelectData):
     if polygon_state['closed']:
         return img_original, polygon_state  # Do not add points if polygon is closed
 
-    x, y = evt.index
+    x, y = evt.index # type: ignore
     polygon_state['points'].append((x, y))
 
     img_with_poly = img_original.copy()
@@ -176,7 +176,7 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
     blended_img.requires_grad = True
 
     # Set up optimizer
-    optimizer = torch.optim.Adam([blended_img], lr=1e-3)
+    optimizer = torch.optim.Adam([blended_img], lr=1e-3) # type: ignore
 
     # Optimization loop
     iter_num = 10000
