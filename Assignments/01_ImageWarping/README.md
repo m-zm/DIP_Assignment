@@ -34,7 +34,7 @@ python run_point_transform.py
 
 <img src="pics/global.gif" alt="global demo" width="800">
 
-### Point Guided Deformation:
+### Point Guided Deformation
 
 <img src="pics/point1.gif" alt="point demo 1" width="800">
 <img src="pics/point2.gif" alt="point demo 2" width="800">
