@@ -1,4 +1,5 @@
 import gradio as gr
+from PIL import Image
 from PIL import ImageDraw
 import numpy as np
 import torch
@@ -105,11 +106,11 @@ def create_mask_from_points(points, img_h, img_w):
     Returns:
         np.ndarray: Binary mask of shape (img_h, img_w).
     """
-    mask = np.zeros((img_h, img_w), dtype=np.uint8)
-    ### FILL: Obtain Mask from Polygon Points. 
-    ### 0 indicates outside the Polygon.
-    ### 255 indicates inside the Polygon.
-
+    points = [(x, y) for x, y in points]
+    mask_img = Image.new('L', (img_w, img_h))
+    draw = ImageDraw.Draw(mask_img)
+    draw.polygon(points, fill='white')
+    mask = np.array(mask_img).astype(np.uint8)
     return mask
 
 # Calculate the Laplacian loss between the foreground and blended image
@@ -126,14 +127,23 @@ def cal_laplacian_loss(foreground_img, foreground_mask, blended_img, background_
     Returns:
         torch.Tensor: The computed Laplacian loss.
     """
-    loss = torch.tensor(0.0, device=foreground_img.device)
-    ### FILL: Compute Laplacian Loss with https://pytorch.org/docs/stable/generated/torch.nn.functional.conv2d.html.
-    ### Note: The loss is computed within the masks.
+    device = foreground_img.device
+    laplacian_op = torch.tensor([\
+        [-1., -1., -1.],\
+        [-1.,  8., -1.],\
+        [-1., -1., -1.]\
+    ]).unsqueeze(0).unsqueeze(0).expand(-1, 3, -1, -1).to(device)
+    foreground_laplacian = torch.nn.functional.conv2d(foreground_img, laplacian_op, padding='same')
+    blended_laplacian = torch.nn.functional.conv2d(blended_img, laplacian_op, padding='same')
+    foreground_mask_expanded = foreground_mask.bool().expand(-1, 1, -1, -1)
+    background_mask_expanded = background_mask.bool().expand(-1, 1, -1, -1)
+    square_diff = (foreground_laplacian[foreground_mask_expanded] - blended_laplacian[background_mask_expanded]).square()
+    loss = torch.sum(square_diff)
 
     return loss
 
 # Perform Poisson image blending
-def blending(foreground_image_original, background_image_original, dx, dy, polygon_state):
+def blending(foreground_image_original, background_image_original, dx, dy, polygon_state, iter_count):
     """
     Blends the foreground polygon area onto the background image using Poisson blending.
 
@@ -179,8 +189,8 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
     optimizer = torch.optim.Adam([blended_img], lr=1e-3) # type: ignore
 
     # Optimization loop
-    iter_num = 10000
-    for step in range(iter_num):
+    iter_num = iter_count
+    for step in range(iter_count):
         blended_img_for_loss = blended_img.detach() * (1. - bg_mask_tensor) + blended_img * bg_mask_tensor  # Only blending in the mask region
 
         loss = cal_laplacian_loss(fg_img_tensor, fg_mask_tensor, blended_img_for_loss, bg_mask_tensor)
@@ -192,7 +202,7 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
         if step % 50 == 0:
             print(f'Optimize step: {step}, Laplacian distance loss: {loss.item()}')
 
-        if step == (iter_num // 2): ### decrease learning rate at the half step
+        if step == (iter_num // 8): ### decrease learning rate at the half step
             optimizer.param_groups[0]['lr'] *= 0.1
 
     # Convert result back to numpy array
@@ -310,6 +320,10 @@ with gr.Blocks(title="Poisson Image Blending", css="""
             dy = gr.Slider(
                 label="Vertical Offset", minimum=-500, maximum=500, step=1, value=0
             )
+        with gr.Column():
+            iter_count = gr.Slider(
+                label="iter_count", minimum=10000, maximum=50000, step=2000, value=10000
+            )
         blend_button = gr.Button("Blend Images")
 
     # Interactions
@@ -352,10 +366,16 @@ with gr.Blocks(title="Poisson Image Blending", css="""
         outputs=background_image_with_polygon,
     )
 
+    iter_count.change(
+        fn=None,
+        inputs=None,
+        outputs=None,
+    )
+
     # Blend images when button is clicked
     blend_button.click(
         fn=blending,
-        inputs=[foreground_image_original, background_image_original, dx, dy, polygon_state],
+        inputs=[foreground_image_original, background_image_original, dx, dy, polygon_state, iter_count],
         outputs=output_image,
     )
 
