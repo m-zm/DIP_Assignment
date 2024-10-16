@@ -1,2 +1,6 @@
 /.venv/
 .markdownlint.json
+__pycache__/
+checkpoints/
+datasets/
+train_results/
