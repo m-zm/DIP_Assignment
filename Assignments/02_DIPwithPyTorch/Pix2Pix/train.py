@@ -1,4 +1,6 @@
 import os
+import re
+import argparse
 import cv2
 import numpy as np
 import torch
@@ -134,7 +136,7 @@ def validate(model, dataloader, criterion, device, epoch, num_epochs):
     avg_val_loss = val_loss / len(dataloader)
     print(f'Epoch [{epoch + 1}/{num_epochs}], Validation Loss: {avg_val_loss:.4f}')
 
-def main():
+def main(batch_size = 20, use_checkpoint = False):
     """
     Main function to set up the training and validation processes.
     """
@@ -145,8 +147,8 @@ def main():
     train_dataset = FacadesDataset(list_file='train_list.txt')
     val_dataset = FacadesDataset(list_file='val_list.txt')
 
-    train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=100, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
     # Initialize model, loss function, and optimizer
     model = FullyConvNetwork().to(device)
@@ -156,9 +158,21 @@ def main():
     # Add a learning rate scheduler for decay
     scheduler = StepLR(optimizer, step_size=200, gamma=0.2)
 
+    last_epoch = 0
+    if use_checkpoint:
+        checkpoints = os.listdir('checkpoints/')
+        checkpoints.sort(key=lambda f: int("".join(filter(str.isdigit, f)))) 
+        checkpoint = checkpoints[-1]
+        m = re.compile(r'pix2pix_model_epoch_(\d+)\.pth').match(checkpoint)
+        if m is None:
+            raise(Exception(f"checkpoint {checkpoint} not found"))
+        last_epoch = int(m.group(1))
+        state = torch.load(f"checkpoints/{checkpoint}", weights_only=True)
+        model.load_state_dict(state)
+
     # Training loop
     num_epochs = 800
-    for epoch in range(num_epochs):
+    for epoch in range(last_epoch, num_epochs):
         train_one_epoch(model, train_loader, optimizer, criterion, device, epoch, num_epochs)
         validate(model, val_loader, criterion, device, epoch, num_epochs)
 
@@ -171,4 +185,8 @@ def main():
             torch.save(model.state_dict(), f'checkpoints/pix2pix_model_epoch_{epoch + 1}.pth')
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('batch_size', type=int)
+    parser.add_argument("-c", "--checkpoint", action="store_true")
+    args = parser.parse_args()
+    main(args.batch_size, args.checkpoint)
