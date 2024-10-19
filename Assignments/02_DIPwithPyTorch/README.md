@@ -1,6 +1,6 @@
-# Assignment 1 - Image Warping
+# Assignment 2 - DIP with PyTorch
 
-## Implementation of Image Geometric Transformation
+## DIP with PyTorch
 
 This repository is the implementation of Assignment_02 of DIP.
 
@@ -45,6 +45,6 @@ python infer.py
 ## Acknowledgement
 
 >📋 Thanks for the algorithms proposed by
-[Poisson Image Editing](https://www.cs.jhu.edu/~misha/Fall07/Papers/Perez03.pdf)
+[Poisson Image Editing](https://www.cs.jhu.edu/~misha/Fall07/Papers/Perez03.pdf),
 [Pix2Pix](https://phillipi.github.io/pix2pix/) and
 [Fully Convolutional Layers](https://arxiv.org/abs/1411.4038).
