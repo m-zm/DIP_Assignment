@@ -2,9 +2,9 @@
 
 ## Implementation of Image Geometric Transformation
 
-This repository is Yudong Guo's implementation of Assignment_01 of DIP.
+This repository is the implementation of Assignment_01 of DIP.
 
-<img src="pics/teaser.png" alt="alt text" width="800">
+<img src="pics/teaser.png" alt="teaser" width="800">
 
 ## Requirements
 

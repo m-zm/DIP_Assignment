@@ -1,24 +1,50 @@
-# Assignment 2 - DIP with PyTorch
+# Assignment 1 - Image Warping
 
-### In this assignment, you will implement traditional DIP (Poisson Image Editing) and deep learning-based DIP (Pix2Pix) with PyTorch.
+## Implementation of Image Geometric Transformation
 
-### Resources:
-- [Assignment Slides](https://rec.ustc.edu.cn/share/705bfa50-6e53-11ef-b955-bb76c0fede49)  
-- [Paper: Poisson Image Editing](https://www.cs.jhu.edu/~misha/Fall07/Papers/Perez03.pdf)
-- [Paper: Image-to-Image Translation with Conditional Adversarial Nets](https://phillipi.github.io/pix2pix/)
-- [Paper: Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1411.4038)
-- [PyTorch Installation & Docs](https://pytorch.org/)
+This repository is the implementation of Assignment_02 of DIP.
 
----
+<img src="pics/teaser.png" alt="teaser" width="800">
 
-### 1. Implement Poisson Image Editing with PyTorch.
-Fill the [Polygon to Mask function](run_blending_gradio.py#L95) and the [Laplacian Distance Computation](run_blending_gradio.py#L115) of 'run_blending_gradio.py'.
+## Requirements
 
+To install requirements:
 
-### 2. Pix2Pix implementation.
-See [Pix2Pix subfolder](Pix2Pix/).
+```setup
+python -m pip install -r requirements.txt
+```
 
----
-### Requirements:
-- 请自行环境配置，推荐使用[conda环境](https://docs.anaconda.com/miniconda/)
-- 按照模板要求写Markdown版作业报告
+## Running
+
+To run poisson blending, run:
+
+```poisson
+python run_blending_gradio.py
+```
+
+To run Pix2Pix, run:
+
+```Pix2Pix
+python infer.py
+```
+
+## Results
+
+### Poisson Blending
+
+<img src="pics/poisson_1.gif" alt="poisson demo 1" width="800">
+<img src="pics/poisson_2.gif" alt="poisson demo 2" width="800">
+
+### Pix2Pix
+
+<img src="pics/facade_1.png" alt="facade 1" width="800">
+<img src="pics/facade_2.png" alt="facade 2" width="800">
+<img src="pics/cityscape_1.png" alt="cityscape 1" width="800">
+<img src="pics/cityscape_2.png" alt="cityscape 2" width="800">
+
+## Acknowledgement
+
+>📋 Thanks for the algorithms proposed by
+[Poisson Image Editing](https://www.cs.jhu.edu/~misha/Fall07/Papers/Perez03.pdf)
+[Pix2Pix](https://phillipi.github.io/pix2pix/) and
+[Fully Convolutional Layers](https://arxiv.org/abs/1411.4038).
