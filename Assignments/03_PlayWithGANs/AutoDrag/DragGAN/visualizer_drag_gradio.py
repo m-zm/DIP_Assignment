@@ -35,6 +35,8 @@ fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input
 
 def add_face_control_points(global_state):
     mouth = global_state["mouth"]
+    left_eye = global_state["left_eye"]
+    right_eye = global_state["right_eye"]
 
     preds = global_state["preds"]
     pred_types = {
@@ -55,14 +57,30 @@ def add_face_control_points(global_state):
     #     new_idx = 0
     # else:
     #     new_idx = last_idx + 1
-    mouth_left_start_point = preds[pred_types['lips']][0].astype(np.int32).tolist()
-    mouth_right_start_point = preds[pred_types['lips']][6].astype(np.int32).tolist()
-    mouth_bottom_mid_point = preds[pred_types['lips']][9].astype(np.int32).tolist()
-    mouth_left_target_point = (preds[pred_types['lips']][0]+[0, -mouth*5]).astype(np.int32).tolist()
-    mouth_right_target_point = (preds[pred_types['lips']][6]+[0, -mouth*5]).astype(np.int32).tolist()
-    global_state['points'][0] = {'start' : mouth_left_start_point, 'target' : mouth_left_target_point}
-    global_state['points'][1] = {'start' : mouth_right_start_point, 'target' : mouth_right_target_point}
-    global_state['points'][2] = {'start' : mouth_bottom_mid_point, 'target' : mouth_bottom_mid_point}
+    mouth_left_start_point = preds[pred_types['lips']][0]
+    mouth_right_start_point = preds[pred_types['lips']][6]
+    mouth_bottom_mid_point = preds[pred_types['lips']][9]
+    mouth_left_target_point = mouth_left_start_point + np.array([0, -mouth*5])
+    mouth_right_target_point = mouth_right_start_point + np.array([0, -mouth*5])
+    global_state['points'][0] = {'start' : mouth_left_start_point.astype(np.int32).tolist(), 'target' : mouth_left_target_point.astype(np.int32).tolist()}
+    global_state['points'][1] = {'start' : mouth_right_start_point.astype(np.int32).tolist(), 'target' : mouth_right_target_point.astype(np.int32).tolist()}
+    global_state['points'][2] = {'start' : mouth_bottom_mid_point.astype(np.int32).tolist(), 'target' : mouth_bottom_mid_point.astype(np.int32).tolist()}
+    
+    left_eye_top_start_point = np.average(preds[pred_types['eye1']][slice(1,3)], 0)
+    left_eye_bottom_start_point = np.average(preds[pred_types['eye1']][slice(4,6)], 0)
+    left_eye_center = (left_eye_top_start_point + left_eye_bottom_start_point)/2
+    left_eye_top_target = left_eye_center + (left_eye_top_start_point - left_eye_center) * left_eye
+    left_eye_bottom_target = left_eye_center + (left_eye_bottom_start_point - left_eye_center) * left_eye
+    global_state['points'][3] = {'start' : left_eye_top_start_point.astype(np.int32).tolist(), 'target' : left_eye_top_target.astype(np.int32).tolist()}
+    global_state['points'][4] = {'start' : left_eye_bottom_start_point.astype(np.int32).tolist(), 'target' : left_eye_bottom_target.astype(np.int32).tolist()}
+
+    right_eye_top_start_point = np.average(preds[pred_types['eye2']][slice(1,3)], 0)
+    right_eye_bottom_start_point = np.average(preds[pred_types['eye2']][slice(4,6)], 0)
+    right_eye_center = (right_eye_top_start_point + right_eye_bottom_start_point)/2
+    right_eye_top_target = right_eye_center + (right_eye_top_start_point - right_eye_center) * right_eye
+    right_eye_bottom_target = right_eye_center + (right_eye_bottom_start_point - right_eye_center) * right_eye
+    global_state['points'][5] = {'start' : right_eye_top_start_point.astype(np.int32).tolist(), 'target' : right_eye_top_target.astype(np.int32).tolist()}
+    global_state['points'][6] = {'start' : right_eye_bottom_start_point.astype(np.int32).tolist(), 'target' : right_eye_bottom_target.astype(np.int32).tolist()}
 
 def reverse_point_pairs(points):
     new_points = []
@@ -307,14 +325,14 @@ with gr.Blocks() as app:
                         with gr.Row(scale=1, min_width=10):
                             left_eye_slider = gr.Slider(value=1,
                                                         minimum=0,
-                                                        maximum=5,
+                                                        maximum=3,
                                                         step=0.1,
                                                         label="left_eye",
                                                         interactive=True)
                         with gr.Row(scale=1, min_width=10):
                             right_eye_slider = gr.Slider(value=1,
                                                         minimum=0,
-                                                        maximum=5,
+                                                        maximum=3,
                                                         step=0.1,
                                                         label="right_eye",
                                                         interactive=True)
@@ -853,7 +871,7 @@ with gr.Blocks() as app:
         add_face_control_points(global_state)
 
         global_state = preprocess_mask_info(global_state, image)
-        global_state['editing_state'] = 'add_points'
+        # global_state['editing_state'] = 'add_points'
         mask = global_state['mask']
         image_raw = global_state['images']['image_raw']
         image_draw = update_image_draw(image_raw, global_state['points'], mask,
