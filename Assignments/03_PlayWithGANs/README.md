@@ -1,10 +1,8 @@
-# Assignment 3 - Play with GAN
+# Assignment 3 - Play with GANs
 
-## Play with GAN
+## Play with GANs
 
 This repository is the implementation of Assignment_03 of DIP.
-
-<img src="pics/teaser.png" alt="teaser" width="800">
 
 ## Requirements
 
